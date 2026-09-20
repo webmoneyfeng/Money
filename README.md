@@ -1,17 +1,21 @@
 # Keepalive
 
-用于定期访问订阅地址，降低 AutoSleep 风险。
+用于以**随机时间间隔**访问订阅地址，降低固定周期访问带来的规律性，同时减少请求频率。
 
 ## 默认配置
 
 - URL: `https://qw.danao.eu.org/sub`
-- 间隔: 1200 秒（20 分钟）
+- 随机间隔: 每次请求完成后重新随机选择 **2–4 小时**
+- 最短间隔: 7200 秒（2 小时）
+- 最长间隔: 14400 秒（4 小时）
 - 日志: `/var/log/keepalive.log`
 - 启动方式: `nohup` 后台运行
 
+每轮请求结束后都会重新生成随机等待时间，因此不会固定在相同的分钟或小时访问。
+
 ## 文件
 
-- `scripts/keepalive.sh`：核心保活循环。
+- `scripts/keepalive.sh`：随机间隔保活循环。
 - `scripts/start-keepalive.sh`：后台启动脚本，避免重复启动。
 
 ## 环境变量
@@ -20,9 +24,17 @@
 
 ```bash
 export KEEPALIVE_URL="https://qw.danao.eu.org/sub"
-export KEEPALIVE_INTERVAL=1200
+export KEEPALIVE_MIN_INTERVAL=7200
+export KEEPALIVE_MAX_INTERVAL=14400
 export KEEPALIVE_LOG="/var/log/keepalive.log"
 export KEEPALIVE_PID_FILE="/var/run/keepalive.pid"
+```
+
+例如改成随机 3–6 小时：
+
+```bash
+export KEEPALIVE_MIN_INTERVAL=10800
+export KEEPALIVE_MAX_INTERVAL=21600
 ```
 
 ## 启动
@@ -40,7 +52,15 @@ tail -f /var/log/keepalive.log
 
 检查进程：
 
-```ps aux | grep '[k]eepalive.sh'
+```bash
+ps aux | grep '[k]eepalive.sh'
+```
+
+日志会显示本次请求结果和下一轮随机等待时间，例如：
+
+```
+2026-09-20 10:47:42 UTC - 保活成功: HTTP 200
+2026-09-20 10:47:42 UTC - 下一次访问约在 3.27 小时后（随机等待 11772 秒）
 ```
 
 ## 容器重启
@@ -57,15 +77,6 @@ tail -f /var/log/keepalive.log
 
 如果后续恢复可用的 Supervisor 配置，也可以由 Supervisor 管理核心脚本。
 
-## 已验证状态
-
-此前已验证订阅地址返回 HTTP 200：
-
-```
-2026-09-20 10:47:42 UTC - 保活脚本启动
-2026-09-20 10:47:42 UTC - 保活成功: HTTP 200
-```
-
 ## 安全
 
-脚本不包含 API Key、密码或其他凭据。URL 和轮询参数可通过环境变量覆盖。
+脚本不包含 API Key、密码或其他凭据。URL、随机时间范围和日志路径均可通过环境变量覆盖。
