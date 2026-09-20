@@ -1,5 +1,5 @@
 #!/bin/bash
-# Keepalive script: requests the subscription endpoint at a random interval.
+# Keepalive script: request the subscription endpoint at a random interval.
 set -u
 
 URL="${KEEPALIVE_URL:-https://qw.danao.eu.org/sub}"
@@ -16,12 +16,9 @@ random_interval() {
 }
 
 while true; do
-  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-    "$URL" \
-    --connect-timeout 10 \
-    --max-time 15)
+  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}"     "$URL"     --connect-timeout 10     --max-time 15)
 
-  TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+  TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC") 
 
   if [ "$HTTP_CODE" = "200" ]; then
     echo "$TIMESTAMP - 保活成功: HTTP $HTTP_CODE" >> "$LOG"
@@ -30,7 +27,6 @@ while true; do
   fi
 
   INTERVAL=$(random_interval)
-  NEXT_HOURS=$(awk "BEGIN {printf \"%.2f\", $INTERVAL / 3600}")
-  echo "$TIMESTAMP - 下一次访问约在 $NEXT_HOURS 小时后（随机等待 $INTERVAL 秒）" >> "$LOG"
+  echo "$TIMESTAMP - 下次访问等待: $INTERVAL 秒" >> "$LOG"
   sleep "$INTERVAL"
 done
